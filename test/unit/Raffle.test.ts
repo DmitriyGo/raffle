@@ -9,29 +9,14 @@ describe('Raffle', function () {
       blockedTokenMock,
       priceFeedMock,
       ac,
-      vrf,
       funder,
       raffle,
     } = await raffleFixture();
 
-    const [, price] = await priceFeedMock.latestRoundData();
-    console.log('price ==>', price);
-  });
+    // const [, price] = await priceFeedMock.latestRoundData();
+    // console.log('price ==>', price);
 
-  it('should get correct price', async function () {
-    const {
-      deployer,
-      vrfCoordinator,
-      allowedTokenMock,
-      blockedTokenMock,
-      priceFeedMock,
-      ac,
-      vrf,
-      funder,
-      raffle,
-    } = await raffleFixture();
-
-    const [, price] = await priceFeedMock.latestRoundData();
-    console.log('price 2 ==>', price);
+    const asd = await funder.getMinRequiredNativeToFund();
+    console.log('asd ==>', Number(asd) / 1e18);
   });
 });

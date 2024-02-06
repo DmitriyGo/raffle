@@ -2,7 +2,7 @@ import { parseUnits } from 'ethers';
 
 export interface networkConfigItem {
   name?: string;
-  gasLane?: string;
+  vrfKeyHash?: string;
   keepersUpdateInterval?: string;
   callbackGasLimit?: string;
   vrfCoordinatorV2?: string;
@@ -18,7 +18,7 @@ export const networkConfig: Record<number, networkConfigItem> = {
   31337: {
     name: 'localhost',
     vrfSubId: '',
-    gasLane:
+    vrfKeyHash:
       '0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c', // 30 gwei
     keepersUpdateInterval: '30',
     callbackGasLimit: '500000', // 500,000 gas
@@ -31,7 +31,7 @@ export const networkConfig: Record<number, networkConfigItem> = {
   11155111: {
     name: 'sepolia',
     vrfSubId: '',
-    gasLane:
+    vrfKeyHash:
       '0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c', // 30 gwei
     keepersUpdateInterval: '30',
     callbackGasLimit: '500000', // 500,000 gas

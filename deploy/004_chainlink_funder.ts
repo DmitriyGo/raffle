@@ -4,7 +4,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { networkConfig } from '../helper-hardhat-config';
 import { shared, tokens, vrfConstants } from '../test/constants/constants';
 import { verify } from '../utils';
-import { getNetworkConfig } from '../utils/getNetworkConfig';
+import { getNetworkDeployConfig } from '../utils/getNetworkDeployConfig';
 
 const CONTRACT_NAME = 'ChainlinkFunder';
 
@@ -16,7 +16,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const chainId = network.config.chainId;
 
   const ac = await hre.deployments.get('RaffleAccessControl');
-  const vrfSubId = await getNetworkConfig('vrfSubId');
+  const vrfSubId = await getNetworkDeployConfig('vrfSubId');
 
   let vrfCoordinatorV2Address: string | undefined;
 
@@ -54,7 +54,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 };
 func.tags = ['prod', 'all', CONTRACT_NAME];
-func.dependencies = ['RaffleVRF'];
 func.id = CONTRACT_NAME;
 
 export default func;

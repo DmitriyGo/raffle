@@ -4,6 +4,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { networkConfig } from '../helper-hardhat-config';
 import { verify } from '../utils';
 import { deployStorage } from '../utils/deploy-storage';
+import { getNetworkDeployConfig } from '../utils/getNetworkDeployConfig';
 
 const CONTRACT_NAME = 'Raffle';
 
@@ -15,10 +16,11 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const chainId = network.config.chainId;
 
   const ac = await hre.deployments.get('RaffleAccessControl');
-  const vrf = await hre.deployments.get('RaffleVRF');
   const funder = await hre.deployments.get('ChainlinkFunder');
+  const vrfSubId = await getNetworkDeployConfig('vrfSubId');
 
   let allowedTokens: string[];
+  let vrfCoordinatorV2Address: string | undefined;
 
   if (chainId === 31337) {
     const allowedTokensMock = await deployStorage.read('allowedTokens');
@@ -26,8 +28,13 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       throw new Error('Invalid allowedTokensMock provided');
     }
     allowedTokens = allowedTokensMock;
+
+    const vrfCoordinator = await hre.deployments.get('VRFCoordinatorMock');
+    vrfCoordinatorV2Address = vrfCoordinator.address;
   } else {
     allowedTokens = networkConfig[chainId!].allowedTokens || [];
+    vrfCoordinatorV2Address =
+      networkConfig[network.config.chainId!].vrfCoordinatorV2;
   }
 
   console.log('Raffle allowed tokens: ', allowedTokens);
@@ -36,7 +43,15 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     from: deployer,
     log: true,
     autoMine: true,
-    args: [ac.address, vrf.address, funder.address, allowedTokens],
+    args: [
+      ac.address,
+      vrfCoordinatorV2Address,
+      funder.address,
+      vrfSubId,
+      networkConfig[network.config.chainId!].vrfKeyHash,
+      networkConfig[network.config.chainId!].keepersUpdateInterval,
+      allowedTokens,
+    ],
   });
 
   if (result.newlyDeployed && result.transactionHash) {

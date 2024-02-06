@@ -23,10 +23,6 @@ export const raffleFixture = deployments.createFixture(
       'RaffleAccessControl',
       ...(await contractArgs('RaffleAccessControl')),
     );
-    const vrf = await ethers.getContractAt(
-      'RaffleVRF',
-      ...(await contractArgs('RaffleVRF')),
-    );
     const funder = await ethers.getContractAt(
       'ChainlinkFunder',
       ...(await contractArgs('ChainlinkFunder')),
@@ -52,7 +48,6 @@ export const raffleFixture = deployments.createFixture(
       blockedTokenMock,
       priceFeedMock,
       ac,
-      vrf,
       funder,
       raffle,
     };

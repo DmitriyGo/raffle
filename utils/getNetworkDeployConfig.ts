@@ -4,7 +4,7 @@ import { NetworkConfigKey, deployStorage } from './deploy-storage';
 
 import { networkConfig } from '../helper-hardhat-config';
 
-export async function getNetworkConfig(
+export async function getNetworkDeployConfig(
   key: NetworkConfigKey,
 ): Promise<string | string[]> {
   const chainId = network.config.chainId!;
