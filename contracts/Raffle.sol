@@ -81,6 +81,7 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     i_vrfKeyHash = _vrfKeyHash;
     i_subscriptionId = _subscriptionId;
     i_interval = _interval;
+    s_lastTimeStamp = block.timestamp;
     s_minBetSize = _minBetSize;
     s_maxBetSize = _maxBetSize;
 
@@ -141,10 +142,6 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     s_totalBets += betInUsd;
     s_players.push(payable(msg.sender));
 
-    for (uint256 i = 0; i < amounts.length; i++) {
-      console.log(i, amounts[i]);
-    }
-
     console.log("weth balance", i_weth.balanceOf(address(this)));
 
     emit RaffleEntered(msg.sender, token, betAmount);
@@ -156,7 +153,7 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     bool isOpen = s_raffleState == RaffleState.OPEN;
     bool timePassed = (block.timestamp - s_lastTimeStamp) > i_interval;
     bool hasPlayers = s_players.length > 0;
-    bool hasBalance = address(this).balance > 0;
+    bool hasBalance = i_weth.balanceOf(address(this)) > 0;
 
     upkeepNeeded = isOpen && timePassed && hasPlayers && hasBalance;
   }
