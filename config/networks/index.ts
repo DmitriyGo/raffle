@@ -78,7 +78,7 @@ export const getForkNetworkConfig = (
     chainId: networks.hardhat.chainId,
     forking: {
       url: networks[network].rpcUrl,
-      blockNumber: 19163550,
+      blockNumber: 19212830,
     },
     accounts: { mnemonic: networks[network].mnemonic },
   };

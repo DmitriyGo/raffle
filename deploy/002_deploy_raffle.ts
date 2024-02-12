@@ -1,12 +1,14 @@
+import { parseUnits } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
+import { ENV } from '../config';
 import { getNetworkConfig } from '../hardhat.network-config';
-import { shared, tokens, vrfConstants } from '../test/constants/constants';
+import { shared, tokens } from '../test/constants/constants';
 import { verify } from '../utils';
 import { getDeployConfigItem } from '../utils/getDeployConfigItem';
 
-const CONTRACT_NAME = 'ChainlinkFunder';
+const CONTRACT_NAME = 'Raffle';
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network, deployments, getNamedAccounts } = hre;
@@ -25,18 +27,21 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const result = await deploy(CONTRACT_NAME, {
     from: deployer,
-    args: [
-      ac.address,
-      vrfSubId,
-      tokens.LINK,
-      vrfCoordinatorV2Address,
-      networkConfig?.priceFeeds?.nativeToUsd,
-      networkConfig?.priceFeeds?.linkToUsd,
-      shared.uniV2Router,
-      vrfConstants.nativeToLinkPath,
-    ],
     log: true,
     autoMine: true,
+    args: [
+      ac.address,
+      vrfCoordinatorV2Address,
+      shared.uniV2Router,
+      networkConfig?.priceFeeds?.nativeToUsd,
+      tokens.WETH,
+      vrfSubId,
+      networkConfig.vrfKeyHash,
+      networkConfig.keepersUpdateInterval,
+      parseUnits(ENV.MIN_BET_SIZE, 18),
+      parseUnits(ENV.MAX_BET_SIZE, 18),
+      networkConfig.allowedTokens,
+    ],
   });
 
   if (result.newlyDeployed && result.transactionHash) {

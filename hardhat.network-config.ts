@@ -24,6 +24,11 @@ export const networkConfig: Record<ChainId, NetworkConfigItem> = {
     keepersUpdateInterval: '30',
     callbackGasLimit: '500000', // 500,000 gas
     // mainnet price feeds
+    allowedTokens: [
+      '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
+      '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC
+      '0x6b175474e89094c44da98b954eedeac495271d0f', // DAI
+    ],
     priceFeeds: {
       nativeToUsd: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',
       linkToUsd: '0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c',
@@ -71,24 +76,3 @@ export const getNetworkConfig = (chainId: number): NetworkConfigItem => {
 
   return networkConfig[chainId as ChainId];
 };
-
-export const localTokensConfig = [
-  {
-    deployment: 'AllowedToken_AT',
-    allowed: true,
-    args: {
-      name: 'AllowedToken',
-      symbol: 'AT',
-      initialSupply: parseUnits('10000000', 18),
-    },
-  },
-  {
-    deployment: 'BlockedToken_BT',
-    allowed: false,
-    args: {
-      name: 'BlockedToken',
-      symbol: 'BT',
-      initialSupply: parseUnits('10000000', 18),
-    },
-  },
-];

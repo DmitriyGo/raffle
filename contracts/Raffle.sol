@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -14,7 +15,7 @@ import {RaffleAccessControlMain} from "./access/RaffleAccessControlMain.sol";
 
 import "./interfaces/IWeth.sol";
 import "./interfaces/IUniswapV2Router02.sol";
-import "./libraries/DecimalCorrectionLibrary.sol";
+import "./libraries/DecimalsCorrectionLibrary.sol";
 
 import "hardhat/console.sol";
 
@@ -27,14 +28,13 @@ error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 playersCount, uint
 
 contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompatibleInterface {
   using SafeERC20 for IERC20;
-  using DecimalCorrectionLibrary for uint256;
+  using DecimalsCorrectionLibrary for uint256;
 
   uint32 public constant VRF_CALLBACK_GAS_LIMIT = 2_500_000;
   uint32 private constant NUM_WORDS = 3;
   uint16 private constant REQUEST_CONFIRMATIONS = 3;
 
   VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
-  ChainlinkFunder public immutable i_chainLinkFunder;
   IWETH public immutable i_weth;
   IUniswapV2Router02 public s_uniV2Router;
 
@@ -48,28 +48,23 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
   uint256 private s_minBetSize;
   uint256 private s_maxBetSize;
   uint256 private s_totalBets;
+  AggregatorV3Interface public s_nativeToUsdPriceFeed;
 
   mapping(address => uint256) private s_playerBets;
   mapping(address => bool) public s_isTokenAllowed;
-  mapping(address => address) public s_tokenUsdPriceFeeds;
   mapping(address => address) public s_tokenEthPriceFeeds;
 
   address payable[] private s_players;
 
-  event RaffleEntered(address indexed player);
+  event RaffleEntered(address indexed player, address token, uint256 amount);
   event RequestedRaffleWinner(uint256 indexed requestId);
   event WinnerPicked(address indexed winner);
-
-  modifier coverChainLinkExpenses() {
-    i_chainLinkFunder.fund{value: msg.value}();
-    _;
-  }
 
   constructor(
     address _ac,
     address _vrfCoordinatorV2,
-    address _chainLinkFunder,
     IUniswapV2Router02 _uniV2Router,
+    address _nativeToUsdPriceFeed,
     address _wethAddress,
     uint64 _subscriptionId,
     bytes32 _vrfKeyHash,
@@ -79,9 +74,9 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     address[] memory allowedTokens
   ) RaffleAccessControlMain(_ac) VRFConsumerBaseV2(_vrfCoordinatorV2) {
     i_vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinatorV2);
-    i_chainLinkFunder = ChainlinkFunder(_chainLinkFunder);
     i_weth = IWETH(_wethAddress);
     s_uniV2Router = _uniV2Router;
+    s_nativeToUsdPriceFeed = AggregatorV3Interface(_nativeToUsdPriceFeed);
 
     i_vrfKeyHash = _vrfKeyHash;
     i_subscriptionId = _subscriptionId;
@@ -97,6 +92,7 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
   }
 
   function enterRaffle(address token, uint256 betAmount) public payable {
+    console.log("betAmount:", betAmount);
     if (s_raffleState != RaffleState.OPEN) {
       revert Raffle__NotOpen();
     }
@@ -105,7 +101,30 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
       revert Raffle__NotAllowedToken(token);
     }
 
-    uint256 betInUsd = _getTokenInUsd(token, betAmount);
+    IERC20(token).safeTransferFrom(msg.sender, address(this), betAmount);
+    IERC20(token).safeIncreaseAllowance(address(s_uniV2Router), betAmount);
+
+    address[] memory path = new address[](2);
+    path[0] = token;
+    path[1] = address(s_uniV2Router.WETH());
+
+    console.log("Calculating swap amounts");
+    uint[] memory targetAmounts = s_uniV2Router.getAmountsOut(betAmount, path);
+    uint amountOutMin = targetAmounts[targetAmounts.length - 1];
+
+    console.log("Swapping tokens");
+    uint[] memory amounts = s_uniV2Router.swapExactTokensForTokens(
+      betAmount,
+      amountOutMin,
+      path,
+      address(this),
+      block.timestamp
+    );
+
+    uint256 betInEth = amounts[1];
+    console.log("betInEth", betInEth);
+
+    uint256 betInUsd = _getNativeInUsd(betInEth);
     console.log("betInUsd", betInUsd);
 
     if (betInUsd < s_minBetSize) {
@@ -122,32 +141,13 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     s_totalBets += betInUsd;
     s_players.push(payable(msg.sender));
 
-    IERC20(token).safeTransferFrom(msg.sender, address(this), betAmount);
-    IERC20(token).approve(address(s_uniV2Router), betAmount);
-
-    address[] memory path = new address[](2);
-    path[0] = token;
-    path[1] = address(s_uniV2Router.WETH());
-
-    // TODO: add mapping token -> weth dataFeed and use priceAggregator
-
-    console.log("swap");
-
-    uint[] memory amounts = s_uniV2Router.swapExactTokensForTokens(
-      betAmount,
-      0, // TODO
-      path,
-      address(this),
-      block.timestamp
-    );
-
     for (uint256 i = 0; i < amounts.length; i++) {
       console.log(i, amounts[i]);
     }
 
-    console.log(i_weth.balanceOf(address(this)));
+    console.log("weth balance", i_weth.balanceOf(address(this)));
 
-    emit RaffleEntered(msg.sender);
+    emit RaffleEntered(msg.sender, token, betAmount);
   }
 
   function checkUpkeep(
@@ -219,32 +219,31 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
     emit WinnerPicked(winner);
   }
 
-  function getTokenPrice(address token) public view returns (int) {
-    AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenUsdPriceFeeds[token]);
-    (, int price, , , ) = priceFeed.latestRoundData();
-    return price;
-  }
-
-  function setTokenPriceFeed(address token, address priceFeed) external onlyAdmin {
-    s_tokenUsdPriceFeeds[token] = priceFeed;
+  function setTokenEthPriceFeed(address token, address priceFeed) external onlyAdmin {
+    s_tokenEthPriceFeeds[token] = priceFeed;
   }
 
   function setRouter(IUniswapV2Router02 newRouter) external onlyAdmin {
     s_uniV2Router = newRouter;
   }
 
-  function _getWethInUsd(uint256 amount) internal view returns (uint256) {
-    AggregatorV3Interface priceFeedWETH = AggregatorV3Interface(s_tokenUsdPriceFeeds[address(i_weth)]);
-
-    uint256 tokenPriceInETH = _getBase18Answer(priceFeedWETH);
-    uint256 amountInETH = (tokenPriceInETH * amount) / 10 ** 18;
-
-    // Assuming 1 WETH = 1 ETH for simplicity, otherwise use priceFeedWETH for conversion if needed
-    return amountInETH;
+  function _standardizeTokenAmount(address token, uint256 amount) internal view returns (uint256) {
+    uint256 tokenDecimals = IERC20Metadata(token).decimals();
+    if (tokenDecimals < 18) {
+      return amount * 10 ** (18 - tokenDecimals);
+    } else if (tokenDecimals > 18) {
+      return amount / 10 ** (tokenDecimals - 18);
+    } else {
+      return amount;
+    }
   }
 
-  function _getTokenInUsd(address token, uint256 amount) internal view returns (uint256) {
-    AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenUsdPriceFeeds[token]);
+  function _getNativeInUsd(uint256 _amount) internal view returns (uint256) {
+    return (_getBase18Answer(s_nativeToUsdPriceFeed) * _amount) / 10 ** 18;
+  }
+
+  function _getTokenInEth(address token, uint256 amount) internal view returns (uint256) {
+    AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenEthPriceFeeds[token]);
     return (_getBase18Answer(priceFeed) * amount) / 10 ** 18;
   }
 

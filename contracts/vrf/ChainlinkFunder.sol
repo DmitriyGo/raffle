@@ -6,14 +6,14 @@ import "@chainlink/contracts/src/v0.8/shared/token/ERC677/IERC677.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../libraries/DecimalCorrectionLibrary.sol";
+import "../libraries/DecimalsCorrectionLibrary.sol";
 import "../access/RaffleAccessControlMain.sol";
 import "../interfaces/IUniswapV2Router02.sol";
 
 import "hardhat/console.sol";
 
 contract ChainlinkFunder is RaffleAccessControlMain {
-  using DecimalCorrectionLibrary for uint256;
+  using DecimalsCorrectionLibrary for uint256;
 
   uint256 public constant BPS = 100;
 

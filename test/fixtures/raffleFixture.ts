@@ -1,7 +1,5 @@
 import { deployments } from 'hardhat';
 
-import { localTokensConfig } from '../../hardhat.network-config';
-
 export const raffleFixture = deployments.createFixture(
   async ({ deployments, getNamedAccounts, ethers }) => {
     const deployerAddress = (await getNamedAccounts()).deployer;
@@ -15,45 +13,24 @@ export const raffleFixture = deployments.createFixture(
       'VRFCoordinatorMock',
       ...(await contractArgs('VRFCoordinatorMock')),
     );
-    const priceFeedMock = await ethers.getContractAt(
-      'PriceFeedMock',
-      ...(await contractArgs('PriceFeedMock')),
-    );
     const ac = await ethers.getContractAt(
       'RaffleAccessControl',
       ...(await contractArgs('RaffleAccessControl')),
-    );
-    const funder = await ethers.getContractAt(
-      'ChainlinkFunder',
-      ...(await contractArgs('ChainlinkFunder')),
     );
     const raffle = await ethers.getContractAt(
       'Raffle',
       ...(await contractArgs('Raffle')),
     );
 
-    const allowedTokenMock = await ethers.getContractAt(
-      'ERC20',
-      ...(await contractArgs(localTokensConfig[0].deployment)),
-    );
-    const blockedTokenMock = await ethers.getContractAt(
-      'ERC20',
-      ...(await contractArgs(localTokensConfig[1].deployment)),
-    );
-
-    raffle.setTokenPriceFeed(
-      await allowedTokenMock.getAddress(),
-      await priceFeedMock.getAddress(),
+    raffle.setTokenEthPriceFeed(
+      '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT -> ETH
+      '0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46',
     );
 
     return {
       deployer,
       vrfCoordinator,
-      allowedTokenMock,
-      blockedTokenMock,
-      priceFeedMock,
       ac,
-      funder,
       raffle,
     };
   },
