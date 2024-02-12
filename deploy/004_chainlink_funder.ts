@@ -1,10 +1,10 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { networkConfig } from '../helper-hardhat-config';
+import { getNetworkConfig } from '../hardhat.network-config';
 import { shared, tokens, vrfConstants } from '../test/constants/constants';
 import { verify } from '../utils';
-import { getNetworkDeployConfig } from '../utils/getNetworkDeployConfig';
+import { getDeployConfigItem } from '../utils/getDeployConfigItem';
 
 const CONTRACT_NAME = 'ChainlinkFunder';
 
@@ -12,21 +12,16 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network, deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-
-  const chainId = network.config.chainId;
+  const chainId = Number(network.config.chainId);
+  const networkConfig = getNetworkConfig(chainId);
 
   const ac = await hre.deployments.get('RaffleAccessControl');
-  const vrfSubId = await getNetworkDeployConfig('vrfSubId');
 
-  let vrfCoordinatorV2Address: string | undefined;
-
-  if (chainId === 31337) {
-    const vrfCoordinator = await hre.deployments.get('VRFCoordinatorMock');
-    vrfCoordinatorV2Address = vrfCoordinator.address;
-  } else {
-    vrfCoordinatorV2Address =
-      networkConfig[network.config.chainId!].vrfCoordinatorV2;
-  }
+  const vrfSubId = await getDeployConfigItem('vrfSubId', chainId);
+  const vrfCoordinatorV2Address = await getDeployConfigItem(
+    'vrfCoordinatorV2',
+    chainId,
+  );
 
   const result = await deploy(CONTRACT_NAME, {
     from: deployer,
@@ -35,8 +30,8 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       vrfSubId,
       tokens.LINK,
       vrfCoordinatorV2Address,
-      networkConfig[chainId!].priceFeeds.nativeToUsd,
-      networkConfig[chainId!].priceFeeds.linkToUsd,
+      networkConfig?.priceFeeds?.nativeToUsd,
+      networkConfig?.priceFeeds?.linkToUsd,
       shared.uniV2Router,
       vrfConstants.nativeToLinkPath,
     ],

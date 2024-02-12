@@ -1,6 +1,8 @@
 import { parseUnits } from 'ethers';
 
-export interface networkConfigItem {
+import { ChainId } from './config/enums/chains';
+
+export type NetworkConfigItem = {
   name?: string;
   vrfKeyHash?: string;
   keepersUpdateInterval?: string;
@@ -8,18 +10,17 @@ export interface networkConfigItem {
   vrfCoordinatorV2?: string;
   vrfSubId?: string;
   allowedTokens?: string[];
-  priceFeeds: {
+  priceFeeds?: {
     nativeToUsd: string;
     linkToUsd: string;
   };
-}
+};
 
-export const networkConfig: Record<number, networkConfigItem> = {
-  31337: {
+export const networkConfig: Record<ChainId, NetworkConfigItem> = {
+  [ChainId.LOCALHOST]: {
     name: 'localhost',
-    vrfSubId: '',
     vrfKeyHash:
-      '0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c', // 30 gwei
+      '0x8af398995b04c28e9951adb9721ef74c74f93e6a478f39e7e0777be13527e7ef', // 200 gwei Key Hash (Ethereum)
     keepersUpdateInterval: '30',
     callbackGasLimit: '500000', // 500,000 gas
     // mainnet price feeds
@@ -28,7 +29,7 @@ export const networkConfig: Record<number, networkConfigItem> = {
       linkToUsd: '0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c',
     },
   },
-  11155111: {
+  [ChainId.SEPOLIA]: {
     name: 'sepolia',
     vrfSubId: '',
     vrfKeyHash:
@@ -46,7 +47,7 @@ export const networkConfig: Record<number, networkConfigItem> = {
       linkToUsd: '0xc59E3633BAAC79493d908e63626716e204A45EdF',
     },
   },
-  1: {
+  [ChainId.MAINNET]: {
     name: 'mainnet',
     keepersUpdateInterval: '30',
     allowedTokens: [
@@ -59,6 +60,16 @@ export const networkConfig: Record<number, networkConfigItem> = {
       linkToUsd: '0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c',
     },
   },
+};
+
+export const getNetworkConfig = (chainId: number): NetworkConfigItem => {
+  const isChainIdValid = Object.values(ChainId).includes(chainId);
+
+  if (!isChainIdValid) {
+    throw new Error(`Invalid chain id: ${chainId}`);
+  }
+
+  return networkConfig[chainId as ChainId];
 };
 
 export const localTokensConfig = [
@@ -81,6 +92,3 @@ export const localTokensConfig = [
     },
   },
 ];
-
-export const developmentChains = ['hardhat', 'localhost'];
-export const VERIFICATION_BLOCK_CONFIRMATIONS = 6;

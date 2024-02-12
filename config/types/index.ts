@@ -18,9 +18,6 @@ export interface Environment {
   readonly MNEMONIC_DEV?: string;
   readonly MNEMONIC_PROD: string;
   readonly FORKING_NETWORK?: Network;
-  readonly VRF_COORDINATOR: string;
-  readonly VRF_SUB_ID?: string;
-  readonly VRF_KEY_HASH: string;
-  readonly TEST: boolean;
-  readonly DEPLOY_STORAGE_PATH?: string;
+  readonly MIN_BET_SIZE: string;
+  readonly MAX_BET_SIZE: string;
 }

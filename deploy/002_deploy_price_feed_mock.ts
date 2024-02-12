@@ -1,6 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
+import { HADRHAT_CHAIN_ID } from '../config';
+
 const CONTRACT_NAME = 'PriceFeedMock';
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -16,7 +18,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     );
   }
 
-  if (network.config.chainId === 31337) {
+  if (network.config.chainId === HADRHAT_CHAIN_ID) {
     console.log('Deploying test PriceFeedMock...');
 
     await deploy(CONTRACT_NAME, {

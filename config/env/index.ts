@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { DEFAULT_VRF_COORDINATOR, DEFAULT_VRF_KEY_HASH } from '../constants';
 import { Environment, Network } from '../types';
 
 export const ENV: Environment = {
@@ -14,9 +13,6 @@ export const ENV: Environment = {
   FORKING_NETWORK: process.env.FORKING_NETWORK
     ? (process.env.FORKING_NETWORK as Network)
     : undefined,
-  VRF_COORDINATOR: process.env.VRF_COORDINATOR ?? DEFAULT_VRF_COORDINATOR,
-  VRF_SUB_ID: process.env.VRF_SUB_ID,
-  VRF_KEY_HASH: process.env.VRF_KEY_HASH ?? DEFAULT_VRF_KEY_HASH,
-  TEST: process.env.TEST === 'true',
-  DEPLOY_STORAGE_PATH: process.env.DEPLOY_STORAGE_PATH,
+  MIN_BET_SIZE: process.env.MIN_BET_SIZE ?? '',
+  MAX_BET_SIZE: process.env.MAX_BET_SIZE ?? '',
 };

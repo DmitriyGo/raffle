@@ -1,13 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { ENV } from '../config';
-import { networkConfigItem } from '../helper-hardhat-config';
+import { NetworkConfigItem } from '../hardhat.network-config';
 
-export type NetworkConfigKey = keyof Omit<networkConfigItem, 'priceFeeds'>;
-
-const STORAGE_PATH =
-  ENV.DEPLOY_STORAGE_PATH || '../deployments/localhost/deploy-storage.json';
+const STORAGE_PATH = '../deployments/localhost/_deploy-storage.json';
 
 class DeployStorage {
   private dataFilePath: string;
@@ -17,17 +13,17 @@ class DeployStorage {
     this.ensureDirectoryExistence(this.dataFilePath);
   }
 
-  public async save(
-    key: NetworkConfigKey,
-    value: string | string[],
+  public async write<K extends keyof NetworkConfigItem>(
+    key: K,
+    value: NetworkConfigItem[K],
   ): Promise<void> {
     try {
-      let data: { [key: string]: string | string[] } = {};
+      let data: NetworkConfigItem = {};
       try {
         const fileContent = await fs.readFile(this.dataFilePath, {
           encoding: 'utf8',
         });
-        data = JSON.parse(fileContent) as { [key: string]: string | string[] };
+        data = JSON.parse(fileContent) as NetworkConfigItem;
       } catch (error) {
         console.error(
           'Could not read the existing file, creating a new one:',
@@ -41,27 +37,19 @@ class DeployStorage {
     }
   }
 
-  public async read(key: NetworkConfigKey): Promise<string | string[] | null> {
+  public async read<K extends keyof NetworkConfigItem>(
+    key: K,
+  ): Promise<NetworkConfigItem[K] | null> {
     try {
       const fileContent = await fs.readFile(this.dataFilePath, {
         encoding: 'utf8',
       });
-      const data: Partial<networkConfigItem> = JSON.parse(fileContent);
-      let value = data[key];
-
-      if (typeof value === 'string' && this.isStringifiedArray(value)) {
-        value = JSON.parse(value);
-      }
-
-      return value ?? null;
+      const data: Partial<NetworkConfigItem> = JSON.parse(fileContent);
+      return data[key] ?? null;
     } catch (error) {
       console.error('Failed to read data:', error);
       return null;
     }
-  }
-
-  private isStringifiedArray(value: string): boolean {
-    return value.startsWith('[') && value.endsWith(']');
   }
 
   private async ensureDirectoryExistence(filePath: string): Promise<void> {

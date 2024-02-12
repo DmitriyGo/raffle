@@ -1,6 +1,6 @@
 import { deployments } from 'hardhat';
 
-import { localTokensConfig } from '../../helper-hardhat-config';
+import { localTokensConfig } from '../../hardhat.network-config';
 
 export const raffleFixture = deployments.createFixture(
   async ({ deployments, getNamedAccounts, ethers }) => {
@@ -39,6 +39,11 @@ export const raffleFixture = deployments.createFixture(
     const blockedTokenMock = await ethers.getContractAt(
       'ERC20',
       ...(await contractArgs(localTokensConfig[1].deployment)),
+    );
+
+    raffle.setTokenPriceFeed(
+      await allowedTokenMock.getAddress(),
+      await priceFeedMock.getAddress(),
     );
 
     return {
