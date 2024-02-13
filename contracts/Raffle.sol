@@ -160,6 +160,7 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
 
   function performUpkeep(bytes calldata /* performData */) external override {
     (bool upkeepNeeded, ) = checkUpkeep("");
+    console.log("upkeep checked:", upkeepNeeded);
 
     if (!upkeepNeeded) {
       revert Raffle__UpkeepNotNeeded({
@@ -177,6 +178,8 @@ contract Raffle is RaffleAccessControlMain, VRFConsumerBaseV2, AutomationCompati
       VRF_CALLBACK_GAS_LIMIT,
       NUM_WORDS
     );
+
+    console.log("requestId:", requestId);
 
     emit RequestedRaffleWinner(requestId);
   }

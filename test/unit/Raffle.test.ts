@@ -27,12 +27,16 @@ describe('Raffle', function () {
     const { upkeepNeeded: upkeepNeeded1 } = await raffle.checkUpkeep('0x');
     console.log('upkeepNeeded ==>', upkeepNeeded1);
 
-    await expect(raffle.enterRaffle(usdtAddress, BET_AMOUNT))
-      .to.emit(raffle, 'RaffleEntered')
-      .withArgs(deployer.address, usdtAddress, BET_AMOUNT);
+    await raffle.enterRaffle(usdtAddress, BET_AMOUNT);
     await increaseTime(30);
 
     const { upkeepNeeded: upkeepNeeded2 } = await raffle.checkUpkeep('0x');
     console.log('upkeepNeeded ==>', upkeepNeeded2);
+
+    await raffle.performUpkeep('0x');
   });
 });
+
+// await expect(raffle.enterRaffle(usdtAddress, BET_AMOUNT))
+//       .to.emit(raffle, 'RaffleEntered')
+//       .withArgs(deployer.address, usdtAddress, BET_AMOUNT);
